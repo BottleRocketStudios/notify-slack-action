@@ -82,5 +82,5 @@ runs:
             ]
           }
       env:
-        SLACK_WEBHOOK_URL: ${{ inputs.slack_webhook_url }}
+        SLACK_WEBHOOK_URL: ${{ inputs.webhook_url }}
         SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK  
