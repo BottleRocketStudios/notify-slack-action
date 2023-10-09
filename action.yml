@@ -21,9 +21,9 @@ runs:
       id: prepare_payload
       run: |
         if [[ ${{ inputs.success }} == true ]]; then
-          BR_SLACK_BUILD_RESULT="Build Success :white_check_mark:"
+          BR_SLACK_BUILD_RESULT=":white_check_mark: Build Success :white_check_mark:"
         else
-          BR_SLACK_BUILD_RESULT="Build Failure :red_circle:"
+          BR_SLACK_BUILD_RESULT=":red_circle: Build Failure :red_circle:"
         fi
 
         echo "BR_SLACK_BUILD_RESULT=$BR_SLACK_BUILD_RESULT" >> $GITHUB_ENV
@@ -75,7 +75,7 @@ runs:
                   },
                   {
                     "type": "mrkdwn",
-                    "text": "*Commit Hash:* ${{ github.sha }}"
+                    "text": "*Commit Hash:* ${{ github.sha:10 }}"
                   }
                 ]
               }
