@@ -1,7 +1,7 @@
 name: Test
 on: [push, pull_request]
 jobs:
-  test_transfer_defaults:
+  test_slack:
     runs-on: macos-latest
     steps:
       - name: Checkout
@@ -10,12 +10,14 @@ jobs:
       - name: Test Success
         uses: ./
         with:
+          webhook_url: ${{ $secrets.SLACK_WEBHOOK_URL }}
           success: true
           artifacts_url: https://www.apple.com
 
       - name: Test Failure
         uses: ./
         with:
+          webhook_url: ${{ $secrets.SLACK_WEBHOOK_URL }}
           success: false
           artifacts_url: https://www.google.com
 

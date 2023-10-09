@@ -28,9 +28,8 @@ runs:
 
         echo "BR_SLACK_BUILD_RESULT=$BR_SLACK_BUILD_RESULT" >> $GITHUB_ENV
 
-    - shell: bash
-      id: send
-      uses: slackapi/slack-github-action@v1.24.0    
+    - id: send
+      uses: slackapi/slack-github-action@v1.24.0
       with:
         payload: |
           {
