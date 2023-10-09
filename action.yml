@@ -1,0 +1,87 @@
+name: Notify Slack Action
+description: Notifies slack about the results of a given workflow
+author: Will McGinty
+
+inputs:
+  webhook_url:
+    description: The webhook URL used to communicate with Slack.
+    required: true
+  success:
+    description: A boolean describing whether the job succeeded
+    required: true
+    default: true
+  artifacts_url:
+    description: The URL at which any artifacts for the job reside
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - shell: bash
+      id: prepare_payload
+      run: |
+        if [[ ${{ inputs.success }} == true ]]; then
+          BR_SLACK_BUILD_RESULT="Build Success :white_check_mark:"
+        else
+          BR_SLACK_BUILD_RESULT="Build Failure :red_circle:"
+        fi
+
+        echo "BR_SLACK_BUILD_RESULT=$BR_SLACK_BUILD_RESULT" >> $GITHUB_ENV
+
+    - shell: bash
+      id: send
+      uses: slackapi/slack-github-action@v1.24.0    
+      with:
+        payload: |
+          {
+            "blocks": [
+              {
+                "type": "header",
+                "text": {
+                  "type": "plain_text",
+                  "text": "${{ env.BR_SLACK_BUILD_RESULT }}",
+                  "emoji": true
+                }
+              },
+              {
+                "type": "section",
+                "fields": [
+                  {
+                    "type": "mrkdwn",
+                    "text": "*Branch:* ${{ github.ref_name }}"
+                  },
+                  {
+                    "type": "mrkdwn",
+                    "text": "*Build:* ${{ github.run_number }}"
+                  },
+                  {
+                    "type": "mrkdwn",
+                    "text": "*Artifacts:* <${{ inputs.artifacts_url }}|View>"
+                  },
+                  {
+                    "type": "mrkdwn",
+                    "text": "*Log:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View>"
+                  }
+                ]
+              },
+              {
+                "type": "divider"
+              },
+              {
+                "type": "context",
+                "elements": [
+                  {
+                    "type": "mrkdwn",
+                    "text": "*Author:* ${{ github.actor }}"
+                  },
+                  {
+                    "type": "mrkdwn",
+                    "text": "*Commit Hash:* ${{ github.sha }}"
+                  }
+                ]
+              }
+            ]
+          }
+      env:
+        SLACK_WEBHOOK_URL: ${{ inputs.slack_webhook_url }}
+        SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK  
