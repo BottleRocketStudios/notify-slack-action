@@ -86,6 +86,9 @@ runs:
         }
         EOF
 
+        # Validate the JSON
+        jq empty payload-content.json
+
     - id: send
       uses: slackapi/slack-github-action@v1.24.0
       with:
