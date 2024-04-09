@@ -12,7 +12,7 @@ inputs:
     default: true
   artifacts_url:
     description: The URL at which any artifacts for the job reside
-    required: true
+    required: false
 
 runs:
   using: "composite"
@@ -20,69 +20,77 @@ runs:
     - shell: bash
       id: prepare_payload
       run: |
+        ### Determine the build result ###
         if [[ ${{ inputs.success }} == true ]]; then
-          BR_SLACK_BUILD_RESULT=":white_check_mark: Build Success :white_check_mark:"
+          build_result=":white_check_mark: Build Success"
         else
-          BR_SLACK_BUILD_RESULT=":red_circle: Build Failure :red_circle:"
+          build_result=":red_circle: Build Failure"
         fi
-        echo "BR_SLACK_BUILD_RESULT=$BR_SLACK_BUILD_RESULT" >> $GITHUB_ENV
 
-        BR_SHORT_COMMIT_HASH=$(echo "${{ github.sha }}" | cut -c 1-10)
-        echo "BR_SHORT_COMMIT_HASH=$BR_SHORT_COMMIT_HASH" >> $GITHUB_ENV
+        ### Determine the short version of the commit hash ###
+        short_hash=$(echo "${{ github.sha }}" | cut -c 1-10)
+
+        ### Determine the payload fields based on the present of artifact URL ###
+        artifacts_payload_field=""
+        if [[ -n "${{ inputs.artifacts_url }}" ]]; then
+          artifacts_payload_field=", { \"type\": \"mrkdwn\", \"text\": \"*Artifacts:* <${{ inputs.artifacts_url }}|View>\" }"
+        fi
+
+        # Construct the payload JSON and write it to a file
+        cat > payload-content.json <<EOF
+        {
+          "blocks": [
+            {
+              "type": "header",
+              "text": {
+                "type": "plain_text",
+                "text": "$build_result",
+                "emoji": true
+              }
+            },
+            {
+              "type": "section",
+              "fields": [
+                {
+                  "type": "mrkdwn",
+                  "text": "*Branch:* ${{ github.ref_name }}"
+                },
+                {
+                  "type": "mrkdwn",
+                  "text": "*Build:* ${{ github.run_number }}"
+                }
+                $artifacts_payload_field,
+                {
+                  "type": "mrkdwn",
+                  "text": "*Log:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View>"
+                }
+              ]
+            },
+            {
+              "type": "divider"
+            },
+            {
+              "type": "context",
+              "elements": [
+                {
+                  "type": "mrkdwn",
+                  "text": "*Author:* ${{ github.actor }}"
+                },
+                {
+                  "type": "mrkdwn",
+                  "text": "*Commit Hash:* $short_hash"
+                }
+              ]
+            }
+          ]
+        }
+        EOF
 
     - id: send
       uses: slackapi/slack-github-action@v1.24.0
       with:
-        payload: |
-          {
-            "blocks": [
-              {
-                "type": "header",
-                "text": {
-                  "type": "plain_text",
-                  "text": "${{ env.BR_SLACK_BUILD_RESULT }}",
-                  "emoji": true
-                }
-              },
-              {
-                "type": "section",
-                "fields": [
-                  {
-                    "type": "mrkdwn",
-                    "text": "*Branch:* ${{ github.ref_name }}"
-                  },
-                  {
-                    "type": "mrkdwn",
-                    "text": "*Build:* ${{ github.run_number }}"
-                  },
-                  {
-                    "type": "mrkdwn",
-                    "text": "*Artifacts:* <${{ inputs.artifacts_url }}|View>"
-                  },
-                  {
-                    "type": "mrkdwn",
-                    "text": "*Log:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View>"
-                  }
-                ]
-              },
-              {
-                "type": "divider"
-              },
-              {
-                "type": "context",
-                "elements": [
-                  {
-                    "type": "mrkdwn",
-                    "text": "*Author:* ${{ github.actor }}"
-                  },
-                  {
-                    "type": "mrkdwn",
-                    "text": "*Commit Hash:* ${{ env.BR_SHORT_COMMIT_HASH }}"
-                  }
-                ]
-              }
-            ]
-          }
+        payload-file-path: "./payload-content.json"
+  
       env:
         SLACK_WEBHOOK_URL: ${{ inputs.webhook_url }}
         SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK  
