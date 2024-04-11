@@ -14,6 +14,12 @@ jobs:
           success: true
           artifacts_url: https://www.apple.com
 
+      - name: Test No Artifacts
+        uses: ./
+        with:
+          webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
+          success: true
+
       - name: Test Failure
         uses: ./
         with:
